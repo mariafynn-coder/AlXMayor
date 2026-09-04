@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>alXmayor — V3 conectada a Supabase</title>
+<style>
+:root{
+  --navy:#0a2145;
+  --navy-2:#112f5f;
+  --text:#10213a;
+  --muted:#6b778c;
+  --line:#e7ebf0;
+  --soft:#f7f9fc;
+  --yellow:#ff6a00;
+  --yellow2:#ff9a3d;
+  --green:#e8f6ec;
+  --purple:#f2efff;
+  --blue:#edf4ff;
+  --orange:#fff5df;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);background:white}
+button,input{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh}
+.topbar{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:22px;padding:14px 28px}
+.logo{font-size:30px;font-weight:850;letter-spacing:-1.2px;white-space:nowrap}.logo .x{color:var(--yellow)}
+.tag{font-size:12px;color:var(--navy);font-weight:700;margin-top:-3px}
+.search{flex:1;max-width:560px;position:relative}
+.search input{width:100%;padding:14px 46px 14px 18px;border:1px solid #d9dee8;border-radius:999px;outline:none}
+.search button{position:absolute;right:5px;top:5px;width:38px;height:38px;border:0;border-radius:50%;background:var(--navy);color:#fff}
+.toplinks{margin-left:auto;display:flex;gap:18px;align-items:center;font-size:14px;font-weight:650}
+.toplinks button{border:0;background:none;color:var(--text)}
+.cta{background:var(--yellow)!important;padding:11px 16px;border-radius:10px!important}
+.register-cta{border:1px solid var(--navy)!important;background:#fff!important;color:var(--navy)!important;padding:10px 15px;border-radius:10px!important}
+.supplier-cta{margin-top:22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.supplier-cta .btn{background:var(--yellow);border-color:var(--yellow)}
+.free-note{font-size:12px;color:#47566a;font-weight:700}
+.layout{display:grid;grid-template-columns:190px 1fr;gap:24px;max-width:1450px;margin:0 auto;padding:18px 22px 92px}
+.sidebar{position:sticky;top:82px;height:calc(100vh - 96px);padding:4px 0}
+.navbtn{width:100%;border:0;background:none;border-radius:10px;padding:12px 14px;text-align:left;margin-bottom:4px;color:var(--text);font-weight:650}
+.navbtn.active,.navbtn:hover{background:#f1f5fb;color:var(--navy)}
+.side-title{font-size:12px;text-transform:uppercase;color:#8b95a5;font-weight:800;margin:18px 14px 8px}
+.category{font-size:13px;padding:7px 14px;color:#39485e}
+.main{min-width:0}
+.hero{border-radius:18px;background:linear-gradient(120deg,#fff9ef 0%,#fff6e4 55%,#f0e3c2 100%);display:grid;grid-template-columns:1.3fr .7fr;min-height:270px;overflow:hidden}
+.hero-copy{padding:38px 42px}.hero h1{font-size:43px;line-height:1.05;margin:0 0 16px;letter-spacing:-1.6px;color:#0e1d33}.hero .x{color:var(--yellow)}
+.hero p{max-width:530px;font-size:17px;line-height:1.55;color:#35455d}
+.hero-art{display:flex;align-items:end;justify-content:center;padding:22px}
+.boxes{position:relative;width:260px;height:190px}.box{position:absolute;background:#b98345;border:2px solid #a16e35;box-shadow:0 12px 25px #8c642a33}.b1{width:110px;height:75px;left:78px;top:30px}.b2{width:95px;height:66px;left:35px;top:90px}.b3{width:130px;height:84px;left:110px;top:92px}
+.hero-points{display:flex;gap:28px;margin-top:26px;font-size:13px;font-weight:750}.hero-points span{display:flex;align-items:center;gap:8px}
+.section-head{display:flex;justify-content:space-between;align-items:center;margin:28px 0 14px}.section-head h2{font-size:22px;margin:0}.link{color:#0e5bc4;font-size:13px;font-weight:750;border:0;background:none}
+.products{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:14px;background:#fff;overflow:hidden;transition:.18s;position:relative}.card:hover{transform:translateY(-2px);box-shadow:0 10px 25px #0a214510}
+.card-img{height:160px;background:#f4f5f7;display:flex;align-items:center;justify-content:center;font-size:58px}.badge{position:absolute;top:10px;left:10px;background:var(--yellow);padding:5px 8px;border-radius:999px;font-size:10px;font-weight:850}
+.card-body{padding:13px}.card-title{font-weight:780;font-size:14px}.price{margin-top:8px;font-weight:850}.small{font-size:12px;color:var(--muted);margin-top:5px}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:26px}.tile{border-radius:14px;padding:18px;min-height:130px}.tile:nth-child(1){background:var(--purple)}.tile:nth-child(2){background:var(--orange)}.tile:nth-child(3){background:var(--green)}.tile:nth-child(4){background:var(--blue)}
+.tile h3{margin:0 0 8px;font-size:16px}.tile p{margin:0 0 12px;font-size:13px;line-height:1.45;color:#4f5b6d}
+.how{margin-top:28px;border:1px solid var(--line);border-radius:16px;padding:20px}.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:14px}.step{padding:8px}.step b{display:block;margin-bottom:6px}.step span{font-size:12px;color:var(--muted)}
+.view{display:none}.view.active{display:block}
+.detail-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:34px;align-items:start}
+.detail-img{min-height:420px;border-radius:18px;background:#f4f5f7;display:flex;align-items:center;justify-content:center;font-size:140px;position:relative}
+.detail-info h1{font-size:32px;margin:8px 0}.seller{color:#45546a;font-weight:650}.rating{float:right;color:#a97800}
+.price-table{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin:20px 0}.price-row{display:grid;grid-template-columns:1fr 1fr;padding:12px 14px;border-bottom:1px solid var(--line)}.price-row:last-child{border:0}.price-row.head{background:#f8fafc;font-weight:800}.price-row span:last-child{text-align:right;font-weight:800}
+.info-lines{display:grid;gap:10px;font-size:14px;margin:18px 0}
+.payments{border:1px solid var(--line);border-radius:14px;padding:15px}.paychips{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.chip{background:#f6f8fb;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700}
+.actions{display:flex;gap:12px;margin-top:18px}.btn{border:1px solid #cdd5e1;background:#fff;border-radius:10px;padding:14px 20px;font-weight:800}.btn.primary{background:var(--yellow);border-color:var(--yellow)}
+.back{border:0;background:none;font-size:14px;color:#44546b;margin-bottom:14px;padding:0}
+.list{display:grid;gap:12px}.list-item{border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;justify-content:space-between;gap:14px;align-items:center}
+.form{max-width:760px;display:grid;gap:14px}.field label{display:block;font-size:13px;font-weight:800;margin-bottom:7px}.field input,.field textarea,.field select{width:100%;border:1px solid #d9dee8;border-radius:10px;padding:12px;background:#fff}.field textarea{min-height:100px}
+.inline{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bottom-nav{display:none}
+.toast{position:fixed;right:18px;bottom:18px;background:var(--navy);color:#fff;padding:13px 16px;border-radius:10px;opacity:0;pointer-events:none;transition:.2s;z-index:50}.toast.show{opacity:1}
+@media(max-width:1050px){.products{grid-template-columns:repeat(3,1fr)}.tiles{grid-template-columns:repeat(2,1fr)}.steps{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:800px){
+  .topbar{padding:12px 14px;gap:10px}.logo{font-size:25px}.tag,.toplinks{display:none}.search{max-width:none}
+  .layout{display:block;padding:12px 12px 84px}.sidebar{display:none}
+  .hero{grid-template-columns:1fr;min-height:auto}.hero-copy{padding:24px}.hero h1{font-size:34px}.hero-art{display:none}.hero-points{gap:12px;flex-wrap:wrap}
+  .products{grid-template-columns:repeat(2,1fr);gap:10px}.card-img{height:135px}.tiles{grid-template-columns:1fr 1fr}.how{display:none}
+  .detail-grid{grid-template-columns:1fr;gap:18px}.detail-img{min-height:300px;font-size:100px}.detail-info h1{font-size:26px}
+  .bottom-nav{position:fixed;display:grid;grid-template-columns:repeat(5,1fr);left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);z-index:40;padding:8px 5px 10px}
+  .bottom-nav button{border:0;background:none;font-size:11px;font-weight:750;color:#47566a}.bottom-nav .plus{font-size:25px;color:var(--navy)}
+  .inline{grid-template-columns:1fr}
+}
+
+.photo-picker{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.photo-preview{width:120px;height:120px;border:1px dashed #b9c6d8;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f7f9fc}.photo-preview img,.card-img img,.detail-img img{width:100%;height:100%;object-fit:cover}.card-img{overflow:hidden}.detail-img{overflow:hidden}
+
+/* Header aprobado: marino + X naranja, navegación alineada y perfil a la derecha */
+.topbar{background:var(--navy);border-bottom:0;color:#fff;gap:24px;padding:16px 26px}
+.logo{color:#fff;font-size:34px}.logo .x{color:var(--yellow)}.tag{color:#fff}
+.search{flex:0 1 420px}.search input{background:transparent;border-color:#ffffff80;color:#fff}.search input::placeholder{color:#ffffffb8}.search button{background:transparent;border:0;color:#fff}
+.toplinks{margin-left:auto;gap:0;align-items:stretch;height:54px;white-space:nowrap}
+.toplinks button{color:#fff;display:flex;align-items:center;justify-content:center;padding:0 16px;border-left:1px solid #ffffff30;border-radius:0;font-size:14px;font-weight:750;line-height:1.15}
+.toplinks button:first-child{border-left:0}.toplinks .cta{background:var(--yellow)!important;color:#fff!important;border:0!important;border-radius:12px!important;margin-left:12px;padding:0 18px}
+.toplinks .register-cta{border:0!important;border-left:1px solid #ffffff30!important;background:transparent!important;color:#fff!important;padding:0 16px;border-radius:0!important}
+#authTopBtn{margin-left:10px!important}
+@media(max-width:1180px){.topbar{gap:14px;padding:14px 18px}.logo{font-size:29px}.search{flex-basis:300px}.toplinks button{padding:0 10px;font-size:13px}}
+@media(max-width:950px){.toplinks button:nth-child(-n+4){display:none}.search{flex:1}.toplinks{height:48px}}
+@media(max-width:800px){.topbar{background:var(--navy)}.logo{color:#fff}.search input{color:#fff}.toplinks{display:none}}
+
+
+.conversation-card{cursor:pointer}.conversation-card:hover{border-color:#b8c5d8;background:#fbfcfe}
+.conversation-meta{font-weight:750;color:#43536a;margin:5px 0}.conversation-actions{display:flex;align-items:center;gap:16px}.conversation-open{padding:9px 14px;color:var(--navy)}
+.modal-chat{display:none;position:fixed;inset:0;background:#0a214566;z-index:100;align-items:center;justify-content:center;padding:18px}.modal-chat.show{display:flex}
+.chat-panel{background:#fff;border-radius:18px;width:min(680px,100%);max-height:86vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px #0003}
+.chat-head{padding:18px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}.chat-head h3{margin:0}.chat-close{border:0;background:none;font-size:25px}
+.chat-body{padding:18px;display:flex;flex-direction:column;gap:10px;overflow:auto;min-height:260px}.chat-bubble{max-width:78%;padding:11px 13px;border-radius:14px;background:#f1f4f8}.chat-bubble.mine{align-self:flex-end;background:#fff0e6}
+.chat-compose{display:flex;gap:10px;padding:15px;border-top:1px solid var(--line)}.chat-compose input{flex:1;border:1px solid #d9dee8;border-radius:10px;padding:12px}.chat-compose .btn{background:var(--navy);color:#fff}
+@media(max-width:650px){.conversation-card{align-items:flex-start;flex-direction:column}.conversation-actions{width:100%;justify-content:space-between}.conversation-open{padding:8px 11px}.chat-panel{max-height:92vh}.chat-bubble{max-width:90%}}
+
+.messages-top{gap:7px!important}
+.messages-icon{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.mobile-nav-icon{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}
+@media(max-width:800px){.mobile-message-btn{line-height:1.15}}
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <div class="logo">al<span class="x">X</span>mayor</div>
+      <div class="tag">El distribuidor digital de Uruguay</div>
+    </div>
+    <div class="search">
+      <input id="globalSearch" placeholder="¿Qué producto o proveedor buscás?"/>
+      <button onclick="doSearch()">⌕</button>
+    </div>
+    <div class="toplinks">
+      <button onclick="go('home')">Nuevos productos</button>
+      <button onclick="go('opportunities')">Oportunidades</button>
+      <button onclick="go('benefits')">Beneficios alX</button>
+      <button class="messages-top" onclick="go('messages')" aria-label="Mensajes" title="Mensajes">
+      <svg class="messages-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 20 18.5H4A1.5 1.5 0 0 1 2.5 17V7A1.5 1.5 0 0 1 4 5.5Zm0 2 8 5.5 8-5.5"/></svg>
+      <span>Mensajes</span>
+    </button>
+      <button id="authTopBtn" onclick="authTopAction()">Iniciar sesión</button>
+      <button id="logoutTopBtn" style="display:none" onclick="logoutReal()">Salir</button>
+      <button id="registerTopBtn" class="register-cta" onclick="go('register')">Registrarse</button>
+      <button class="cta" onclick="startPublish()">Publicá gratis</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <button class="navbtn active" data-view="home" onclick="go('home')">Inicio</button>
+      <button class="navbtn" data-view="products" onclick="go('products')">Productos</button>
+      <button class="navbtn" data-view="suppliers" onclick="go('suppliers')">Proveedores</button>
+      <button class="navbtn" data-view="opportunities" onclick="go('opportunities')">Oportunidades</button>
+      <button class="navbtn" data-view="benefits" onclick="go('benefits')">Beneficios alX</button>
+      <div class="side-title">Categorías</div>
+      <div class="category">Ropa y accesorios</div><div class="category">Hogar y bazar</div><div class="category">Ferretería y construcción</div><div class="category">Alimentos y bebidas</div><div class="category">Electrónica</div><div class="category">Belleza y cuidado</div>
+    </aside>
+
+    <main class="main">
+      <section id="home" class="view active">
+        <div class="hero">
+          <div class="hero-copy">
+            <h1>Mayorista.<br/>Fácil, rápido y al<span class="x">X</span>mayor.</h1>
+            <p>Encontrá productos, compará precios por cantidad y conectate con proveedores de todo Uruguay.</p>
+            <div class="hero-points"><span>⌕ Buscá</span><span>⇅ Compará</span><span>▢ Contactá</span><span>↗ Crecé</span></div>
+            <div class="supplier-cta">
+              <button class="btn primary" onclick="startPublish()">Publicá gratis</button>
+              <span class="free-note">Hasta 5 productos gratis · Sin comisión por venta</span>
+            </div>
+          </div>
+          <div class="hero-art"><div class="boxes"><div class="box b1"></div><div class="box b2"></div><div class="box b3"></div></div></div>
+        </div>
+
+        <div class="section-head"><h2>Nuevos productos</h2><button class="link" onclick="go('products')">Ver todos</button></div>
+        <div id="homeProducts" class="products"></div>
+
+        <div class="tiles">
+          <div class="tile"><h3>¿Sos comercio?</h3><p>Encontrá productos mayoristas y compará condiciones.</p><button class="link" onclick="go('products')">Buscar productos →</button></div>
+          <div class="tile"><h3>¿Sos proveedor?</h3><p>Publicá tus productos y llegá a más clientes.</p><button class="link" onclick="startPublish()">Publicar ahora →</button></div>
+          <div class="tile"><h3>Oportunidades</h3><p>Publicá lo que buscás o lo que ofrecés.</p><button class="link" onclick="go('opportunities')">Ver oportunidades →</button></div>
+          <div class="tile"><h3>Beneficios alX</h3><p>Ofertas y promociones destacadas.</p><button class="link" onclick="go('benefits')">Ver beneficios →</button></div>
+        </div>
+
+        <div class="how"><h2>¿Cómo funciona alXmayor?</h2><div class="steps">
+          <div class="step"><b>1. Buscás</b><span>Productos o proveedores.</span></div>
+          <div class="step"><b>2. Elegís</b><span>Precios por cantidad.</span></div>
+          <div class="step"><b>3. Hacés pedido</b><span>Indicás cantidad y consultás.</span></div>
+          <div class="step"><b>4. Pagás</b><span>Transferencia, Mercado Pago o efectivo.</span></div>
+          <div class="step"><b>5. Recibís</b><span>Coordinás el envío con el proveedor.</span></div>
+        </div></div>
+      </section>
+
+      <section id="products" class="view">
+        <div class="section-head"><h2>Productos mayoristas</h2></div>
+        <div id="allProducts" class="products"></div>
+      </section>
+
+      <section id="productDetail" class="view">
+        <button class="back" onclick="historyBack()">← Volver</button>
+        <div class="detail-grid">
+          <div class="detail-img" id="detailEmoji">👕</div>
+          <div class="detail-info">
+            <span class="badge" style="position:static;display:inline-block">OFERTA alX</span>
+            <h1 id="detailTitle">Remera básica algodón</h1>
+            <div><span class="seller" id="detailSeller">Textil del Sur ✓ · Montevideo</span><span class="rating">★ 4.8</span></div>
+            <div class="price-table">
+              <div class="price-row head"><span>Cantidad</span><span>Precio unitario</span></div>
+              <div class="price-row"><span>1 - 5 unidades</span><span>$1.290</span></div>
+              <div class="price-row"><span>6 - 23 unidades</span><span>$850</span></div>
+              <div class="price-row"><span>24 - 49 unidades</span><span>$760</span></div>
+              <div class="price-row"><span>50 - 99 unidades</span><span>$720</span></div>
+              <div class="price-row"><span>100+ unidades</span><span>$700</span></div>
+            </div>
+            <div class="info-lines"><div>📦 Mínimo de compra: 12 unidades</div><div>🚚 Envíos a todo Uruguay</div><div>↗ Envío a cargo del comprador</div></div>
+            <div class="payments"><b>Medios de pago aceptados</b><div class="paychips"><span class="chip">🏦 Transferencia</span><span class="chip">💳 Mercado Pago</span><span class="chip">💵 Efectivo al retirar</span></div></div>
+            <div class="actions"><button class="btn" onclick="consultSelectedProduct()">Consultar</button><button class="btn primary" onclick="prepareOrder()">Hacer pedido</button><button class="btn" id="detailEditButton" style="display:none" onclick="openEditProduct()">✏️ Editar producto</button><button class="btn" id="detailPhotoButton" style="display:none" onclick="document.getElementById('detailPhotoInput').click()">📷 Agregar/cambiar foto</button><input id="detailPhotoInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" style="display:none" onchange="uploadDetailPhoto()"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="editProduct" class="view">
+        <button class="back" onclick="historyBack()">← Volver</button>
+        <h2>Editar producto</h2>
+        <p class="small">Los cambios se guardan directamente en tu publicación.</p>
+        <div class="form">
+          <div class="field"><label>Nombre del producto *</label><input id="editProductName"></div>
+          <div class="inline"><div class="field"><label>Rubro *</label><select id="editProductCategory"></select></div><div class="field"><label>Compra mínima *</label><input id="editProductMinQty" type="number" min="1"></div></div>
+          <div class="inline"><div class="field"><label>Precio unitario desde *</label><input id="editProductPrice" type="number" min="0" step="0.01"></div><div class="field"><label>Moneda</label><select id="editProductCurrency"><option value="UYU">UYU</option><option value="USD">USD</option></select></div></div>
+          <div class="field"><label>Descripción breve</label><textarea id="editProductDescription"></textarea></div>
+          <div class="field"><label>Envíos</label><select id="editProductShipping"><option value="uruguay">Todo Uruguay</option><option value="montevideo">Montevideo</option><option value="interior">Interior</option><option value="pickup">Retiro en local</option><option value="coordinate">A coordinar</option></select></div>
+          <div class="actions"><button class="btn" onclick="openProduct(selectedProduct.id)">Cancelar</button><button class="btn primary" onclick="saveProductEdit()">Guardar cambios</button></div>
+        </div>
+      </section>
+
+      <section id="order" class="view">
+        <button class="back" onclick="historyBack()">← Volver</button>
+        <h2>Hacer pedido</h2>
+        <p class="small">Tus datos de contacto se compartirán con el proveedor cuando confirme el pedido, para coordinar pago y entrega.</p>
+        <div class="form">
+          <div class="field"><label>Producto</label><input id="orderProductName" readonly></div>
+          <div class="inline">
+            <div class="field"><label>Cantidad</label><input id="qty" type="number" min="1" value="1" oninput="calcOrder()"></div>
+            <div class="field"><label>Precio estimado</label><input id="orderTotal" readonly></div>
+          </div>
+          <div class="field"><label>Medio de pago preferido</label><select id="orderPaymentMethod"></select></div>
+          <div class="inline"><div class="field"><label>Nombre de contacto</label><input id="orderContactName"></div><div class="field"><label>Teléfono</label><input id="orderContactPhone"></div></div>
+          <div class="field"><label>Email</label><input id="orderContactEmail" type="email"></div>
+          <div class="inline"><div class="field"><label>Departamento de entrega</label><input id="orderDeliveryDepartment"></div><div class="field"><label>Localidad</label><input id="orderDeliveryLocality"></div></div>
+          <div class="field"><label>Dirección / referencia</label><input id="orderDeliveryAddress"></div>
+          <div class="field"><label>Mensaje al proveedor</label><textarea id="orderBuyerMessage" placeholder="Ej.: Necesito entrega en Maldonado."></textarea></div>
+          <button class="btn primary" onclick="submitOrderReal()">Enviar pedido</button>
+        </div>
+      </section>
+
+      <section id="login" class="view">
+        <h2>Iniciar sesión</h2>
+        <p class="small">Entrá a tu cuenta real de AlXmayor.</p>
+        <div class="form">
+          <div class="field"><label>Email</label><input id="loginEmail" type="email" placeholder="tu@email.com"></div>
+          <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" placeholder="••••••••"></div>
+          <button class="btn primary" onclick="loginReal()">Iniciar sesión</button>
+          <button class="btn" onclick="resendConfirmation()">Reenviar email de confirmación</button>
+          <button class="btn" onclick="go('register')">Crear una cuenta</button>
+        </div>
+      </section>
+
+      <section id="register" class="view">
+        <h2>Crear cuenta</h2>
+        <p class="small">Registrarte es gratis. Usamos Supabase Auth y, si tu proyecto requiere confirmación, recibirás un email.</p>
+        <div class="form">
+          <div class="field"><label>Nombre completo</label><input id="regName" placeholder="Tu nombre y apellido"></div>
+          <div class="field"><label>Email</label><input id="regEmail" type="email" placeholder="tu@email.com"></div>
+          <div class="field"><label>Contraseña</label><input id="regPassword" type="password" placeholder="Mínimo 8 caracteres"></div>
+          <button class="btn primary" onclick="registerReal()">Registrarme gratis</button>
+          <button class="btn" onclick="go('login')">Ya tengo cuenta</button>
+        </div>
+      </section>
+
+      <section id="company" class="view">
+        <h2>Tu empresa</h2>
+        <p class="small">Estos datos se guardan una sola vez en Supabase.</p>
+        <div class="form">
+          <div class="field"><label>Nombre comercial *</label><input id="companyName" placeholder="Ej.: Textil del Sur"></div>
+          <div class="inline">
+            <div class="field"><label>Departamento *</label><select id="companyDepartment"><option>Montevideo</option><option>Canelones</option><option>Maldonado</option><option>Colonia</option><option>Salto</option><option>Paysandú</option><option>Otro</option></select></div>
+            <div class="field"><label>Localidad *</label><input id="companyLocality" placeholder="Ej.: Montevideo"></div>
+          </div>
+          <div class="field"><label>Rubro principal</label><select id="companyCategory"></select></div>
+          <div class="inline">
+            <div class="field"><label>Teléfono</label><input id="companyPhone" placeholder="09x xxx xxx"></div>
+            <div class="field"><label>Email</label><input id="companyEmail" type="email" placeholder="empresa@email.com"></div>
+          </div>
+          <button class="btn primary" onclick="saveCompanyReal()">Guardar y publicar mi primer producto</button>
+        </div>
+      </section>
+
+      <section id="publish" class="view">
+        <h2>Publicar producto</h2>
+        <p class="small"><b id="publishingAs">Publicado por: tu empresa</b> · Plan gratis: hasta 5 productos activos.</p>
+        <div class="form">
+          <div class="field"><label>Nombre del producto *</label><input id="productName" placeholder="Ej.: Remera básica algodón"></div>
+          <div class="inline"><div class="field"><label>Rubro *</label><select id="productCategory"></select></div><div class="field"><label>Compra mínima *</label><input id="productMinQty" type="number" min="1" value="1"></div></div>
+          <div class="inline"><div class="field"><label>Precio unitario desde *</label><input id="productPrice" type="number" min="0" step="0.01" placeholder="850"></div><div class="field"><label>Moneda</label><select id="productCurrency"><option value="UYU">UYU</option><option value="USD">USD</option></select></div></div>
+          <div class="field"><label>Descripción breve</label><textarea id="productDescription"></textarea></div>
+          <div class="field"><label>Foto del producto</label><div class="photo-picker"><div class="photo-preview" id="productPhotoBox"><span id="productPhotoHint">📷</span><img id="productPhotoPreview" alt="Vista previa" style="display:none"></div><div><input id="productPhoto" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onchange="previewProductPhoto()"><div class="small">JPG, PNG, WebP o GIF · máximo 5 MB</div></div></div></div>
+          <div class="field"><label>Envíos</label><select id="productShipping"><option value="uruguay">Todo Uruguay</option><option value="montevideo">Montevideo</option><option value="interior">Interior</option><option value="pickup">Retiro en local</option><option value="coordinate">A coordinar</option></select></div>
+          <div class="actions"><button class="btn" onclick="toast('Vista previa local')">Vista previa</button><button class="btn primary" onclick="publishProductReal()">Publicar producto</button></div>
+        </div>
+      </section>
+
+      <section id="opportunities" class="view">
+        <div class="section-head"><h2>Oportunidades</h2><button class="btn primary" onclick="toast('Formulario de oportunidad abierto')">Publicar oportunidad</button></div>
+        <div class="list">
+          <div class="list-item"><div><b>Busco proveedor de descartables</b><div class="small">Maldonado · Comercio gastronómico</div></div><button class="btn" onclick="toast('Marcaste interés')">Me interesa</button></div>
+          <div class="list-item"><div><b>Importador busca comercios para nueva línea</b><div class="small">Todo Uruguay · Hogar y bazar</div></div><button class="btn" onclick="toast('Abriste la oportunidad')">Ver</button></div>
+          <div class="list-item"><div><b>Distribuidor ofrece cobertura en litoral</b><div class="small">Salto · Paysandú · Río Negro</div></div><button class="btn" onclick="toast('Abriste la oportunidad')">Ver</button></div>
+        </div>
+      </section>
+
+      <section id="benefits" class="view">
+        <div class="section-head"><h2>Beneficios alX</h2></div>
+        <div class="list">
+          <div class="list-item"><div><b>15% OFF en compra mayorista</b><div class="small">Textil del Sur · Hasta el 15/09</div></div><button class="btn" onclick="go('productDetail')">Ver producto</button></div>
+          <div class="list-item"><div><b>Envío sin costo desde $15.000</b><div class="small">Hogar Central · Todo Uruguay</div></div><button class="btn" onclick="toast('Beneficio guardado')">Guardar</button></div>
+        </div>
+      </section>
+
+      <section id="suppliers" class="view">
+        <div class="section-head"><h2>Proveedores</h2></div>
+        <p class="small">Empresas reales que publican en alXmayor.</p>
+        <div id="supplierList" class="list"><div class="small">Cargando proveedores…</div></div>
+      </section>
+
+      <section id="supplierDetail" class="view">
+        <button class="back" onclick="historyBack()">← Volver</button>
+        <h2 id="supplierDetailName">Proveedor</h2>
+        <div class="small" id="supplierDetailMeta"></div>
+        <p id="supplierDetailDescription" style="max-width:760px"></p>
+        <div class="section-head"><h2>Productos publicados</h2></div>
+        <div id="supplierProducts" class="products"></div>
+      </section>
+
+      <section id="messages" class="view">
+        <h2>Mensajes</h2>
+        <p class="small">Conversaciones reales de tu cuenta.</p>
+        <div id="messageList" class="list"><div class="small">Iniciá sesión para ver tus conversaciones.</div></div>
+      </section>
+
+      <section id="account" class="view">
+        <h2>Mi perfil</h2>
+        <div class="form" style="margin-bottom:18px">
+          <div class="small" id="accountLoggedStatus">Iniciá sesión para ver tu perfil.</div>
+          <div class="inline">
+            <div class="field"><label>Nombre</label><input id="accountFullName"></div>
+            <div class="field"><label>Teléfono</label><input id="accountPhone" placeholder="09x xxx xxx"></div>
+          </div>
+          <div class="field"><label>Email de acceso</label><input id="accountEmail" readonly></div>
+          <button class="btn primary" onclick="saveMyProfile()">Guardar perfil</button>
+        </div>
+        <div class="list">
+          <div class="list-item"><div><b id="accountCompanyName">Mi empresa</b><div class="small" id="accountCompanyMeta">Sin empresa registrada</div></div><button class="btn" onclick="startPublish()">Publicar producto</button></div>
+          <div class="list-item"><div><b>Mis publicaciones</b><div class="small" id="accountProductCount">0 de 5 productos activos</div></div><button class="btn" onclick="showMyProducts()">Ver productos</button></div>
+          <div class="list-item"><div><b>Plan</b><div class="small">Gratis · hasta 5 productos activos</div></div><button class="btn" onclick="toast('Planes: Gratis / PRO')">Ver planes</button></div>
+          <div class="list-item"><div><b>Sesión</b><div class="small">Tu cuenta está conectada en este dispositivo.</div></div><button class="btn" onclick="logoutReal()">Salir</button></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="bottom-nav">
+    <button onclick="go('home')">⌂<br>Inicio</button>
+    <button onclick="go('products')">⌕<br>Buscar</button>
+    <button class="plus" onclick="startPublish()">＋</button>
+    <button class="mobile-message-btn" onclick="go('messages')" aria-label="Mensajes">
+      <svg class="mobile-nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 20 18.5H4A1.5 1.5 0 0 1 2.5 17V7A1.5 1.5 0 0 1 4 5.5Zm0 2 8 5.5 8-5.5"/></svg><br>Mensajes
+    </button>
+    <button onclick="go('account')">○<br>Mi cuenta</button>
+  </nav>
+  <div id="toast" class="toast"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://jmawobfhthlnlhsymsnz.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_snEcvVd5f67W01_vAVEszQ_WFoA_tlk';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+const SITE_URL = window.location.origin;
+
+let currentUser = null;
+let currentCompany = null;
+let categories = [];
+let products = [];
+let suppliers = [];
+let selectedSupplier = null;
+let selectedProduct = null;
+let navHistory=['home'];
+
+function fmtMoney(value,currency='UYU'){
+  const symbol=currency==='USD'?'US$':'$';
+  return symbol+Number(value||0).toLocaleString('es-UY',{maximumFractionDigits:2});
+}
+function emojiForCategory(name=''){
+  name=name.toLowerCase();
+  if(name.includes('ropa')) return '👕'; if(name.includes('calzado')) return '👟'; if(name.includes('ferreter')) return '🛠️';
+  if(name.includes('alimento')) return '🥫'; if(name.includes('electr')) return '🔌'; if(name.includes('belleza')) return '🧴';
+  if(name.includes('hogar')) return '🏠'; if(name.includes('juguet')) return '🧸'; if(name.includes('automotor')) return '🚗'; return '📦';
+}
+async function initApp(){
+  await loadCategories();
+  const {data:{session}}=await db.auth.getSession();
+  currentUser=session?.user||null;
+  await refreshCompany();
+  await loadProducts();
+  updateAuthUI();
+  db.auth.onAuthStateChange(async (_event,session)=>{currentUser=session?.user||null; await refreshCompany(); updateAuthUI();});
+}
+async function loadCategories(){
+  const {data,error}=await db.from('categories').select('id,name,slug').eq('is_active',true).order('sort_order');
+  if(error){toast('No pude cargar categorías'); return;}
+  categories=data||[];
+  const options=categories.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  ['companyCategory','productCategory','editProductCategory'].forEach(id=>{const el=document.getElementById(id); if(el) el.innerHTML=options;});
+}
+async function refreshCompany(){
+  currentCompany=null;
+  if(!currentUser) return;
+  const {data:memberships}=await db.from('company_users').select('company_id,role').eq('user_id',currentUser.id).limit(1);
+  const membership=memberships?.[0]; if(!membership) return;
+  const {data}=await db.from('companies').select('*').eq('id',membership.company_id).single();
+  currentCompany=data||null;
+  if(currentCompany) document.getElementById('publishingAs').textContent='Publicado por: '+currentCompany.commercial_name;
+}
+function updateAuthUI(){
+  const btn=document.getElementById('authTopBtn');
+  const logout=document.getElementById('logoutTopBtn');
+  const register=document.getElementById('registerTopBtn');
+  if(!btn) return;
+  if(currentUser){
+    const name=(currentUser.user_metadata?.full_name||currentUser.email||'Mi perfil').split(' ')[0];
+    btn.textContent='👤 '+name;
+    if(logout) logout.style.display='inline-flex';
+    if(register) register.style.display='none';
+  }else{
+    btn.textContent='Iniciar sesión';
+    if(logout) logout.style.display='none';
+    if(register) register.style.display='inline-flex';
+  }
+}
+async function authTopAction(){
+  if(currentUser){go('account'); await loadAccount();}
+  else go('login');
+}
+async function logoutReal(){
+  await db.auth.signOut(); currentUser=null; currentCompany=null; updateAuthUI(); go('home'); toast('Sesión cerrada');
+}
+function startPublish(){
+  if(!currentUser){go('register'); toast('Creá tu cuenta para publicar gratis'); return;}
+  if(!currentCompany){go('company'); toast('Completá los datos de tu empresa una sola vez'); return;}
+  document.getElementById('publishingAs').textContent='Publicado por: '+currentCompany.commercial_name;
+  go('publish');
+}
+async function registerReal(){
+  const full_name=document.getElementById('regName').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const password=document.getElementById('regPassword').value;
+  if(!full_name||!email||password.length<8){toast('Completá nombre, email y contraseña de 8+ caracteres');return;}
+  const {data,error}=await db.auth.signUp({email,password,options:{data:{full_name}}});
+  if(error){toast('Registro: '+error.message);return;}
+  if(data.session){currentUser=data.user; await refreshCompany(); go('company'); toast('Cuenta creada. Ahora registrá tu empresa.');}
+  else {go('login'); toast('Cuenta creada. Revisá tu email para confirmar y luego iniciá sesión.');}
+}
+async function loginReal(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  if(error){
+    if(String(error.message).toLowerCase().includes('email not confirmed')){
+      toast('Tu email todavía no está confirmado. Revisá tu correo o tocá “Reenviar email de confirmación”.');
+    } else {
+      toast('No pude iniciar sesión: '+error.message);
+    }
+    return;
+  }
+  currentUser=data.user; await refreshCompany(); updateAuthUI(); go(currentCompany?'home':'company'); toast('Sesión iniciada');
+}
+
+async function resendConfirmation(){
+  const email=document.getElementById('loginEmail').value.trim();
+  if(!email){toast('Escribí tu email para reenviar la confirmación');return;}
+  const {error}=await db.auth.resend({type:'signup',email});
+  if(error){toast('No pude reenviar el email: '+error.message);return;}
+  toast('Te reenviamos el email de confirmación. Revisá también Spam o Promociones.');
+}
+
+async function saveCompanyReal(){
+  if(!currentUser){go('login');return;}
+  const params={
+    p_commercial_name:document.getElementById('companyName').value.trim(),
+    p_department:document.getElementById('companyDepartment').value,
+    p_locality:document.getElementById('companyLocality').value.trim(),
+    p_category_id:Number(document.getElementById('companyCategory').value)||null,
+    p_phone:document.getElementById('companyPhone').value.trim()||null,
+    p_email:document.getElementById('companyEmail').value.trim()||null,
+    p_description:null
+  };
+  if(!params.p_commercial_name||!params.p_locality){toast('Nombre comercial y localidad son obligatorios');return;}
+  const {data,error}=await db.rpc('create_company',params);
+  if(error){toast('Empresa: '+error.message);return;}
+  await refreshCompany();
+  if(!currentCompany && data){const {data:c}=await db.from('companies').select('*').eq('id',data).single(); currentCompany=c;}
+  document.getElementById('publishingAs').textContent='Publicado por: '+currentCompany.commercial_name;
+  go('publish'); toast('Empresa creada. Ya podés publicar.');
+}
+function previewProductPhoto(){
+  const input=document.getElementById('productPhoto');
+  const img=document.getElementById('productPhotoPreview');
+  const hint=document.getElementById('productPhotoHint');
+  const file=input?.files?.[0];
+  if(!file){img.style.display='none';hint.style.display='';return;}
+  if(file.size>5*1024*1024){toast('La foto supera 5 MB');input.value='';return;}
+  img.src=URL.createObjectURL(file); img.style.display='block'; hint.style.display='none';
+}
+function productImagePublicUrl(path){
+  if(!path)return null;
+  return db.storage.from('product-images').getPublicUrl(path).data.publicUrl;
+}
+async function attachPhotoToProduct(productId,file){
+  if(!currentUser) throw new Error('Iniciá sesión para subir fotos');
+  if(!file) return null;
+  if(!['image/jpeg','image/png','image/webp','image/gif'].includes(file.type)) throw new Error('Formato de imagen no admitido');
+  if(file.size>5*1024*1024) throw new Error('La foto supera 5 MB');
+  const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'');
+  const unique=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(16).slice(2));
+  const path=`${currentUser.id}/${productId}/${unique}.${ext}`;
+  const {error:uploadError}=await db.storage.from('product-images').upload(path,file,{contentType:file.type,cacheControl:'3600',upsert:false});
+  if(uploadError) throw uploadError;
+  const {data:oldImages}=await db.from('product_images').select('id,storage_path').eq('product_id',productId);
+  const {error:metaError}=await db.from('product_images').insert({product_id:productId,storage_path:path,alt_text:'Foto del producto',sort_order:0});
+  if(metaError){await db.storage.from('product-images').remove([path]);throw metaError;}
+  const previous=(oldImages||[]).filter(x=>x.storage_path!==path);
+  if(previous.length){
+    await db.from('product_images').delete().in('id',previous.map(x=>x.id));
+    await db.storage.from('product-images').remove(previous.map(x=>x.storage_path));
+  }
+  return path;
+}
+async function publishProductReal(){
+  if(!currentUser||!currentCompany){startPublish();return;}
+  const name=document.getElementById('productName').value.trim();
+  const category_id=Number(document.getElementById('productCategory').value);
+  const minimum_quantity=Number(document.getElementById('productMinQty').value||1);
+  const price=Number(document.getElementById('productPrice').value);
+  const currency=document.getElementById('productCurrency').value;
+  const description=document.getElementById('productDescription').value.trim()||null;
+  const shipping_scope=document.getElementById('productShipping').value;
+  const photo=document.getElementById('productPhoto')?.files?.[0]||null;
+  if(!name||!category_id||minimum_quantity<1||!(price>=0)){toast('Completá producto, categoría, mínimo y precio');return;}
+  const {data:p,error}=await db.rpc('create_product_with_initial_price',{
+    p_company_id:currentCompany.id,
+    p_category_id:category_id,
+    p_name:name,
+    p_description:description,
+    p_minimum_quantity:minimum_quantity,
+    p_currency:currency,
+    p_shipping_scope:shipping_scope,
+    p_unit_price:price
+  });
+  if(error){toast('No se pudo publicar: '+error.message);return;}
+  const productId=typeof p==='string'?p:(p?.id||p);
+  let photoWarning='';
+  if(photo&&productId){try{await attachPhotoToProduct(productId,photo);}catch(e){console.error(e);photoWarning=' El producto quedó publicado, pero la foto no se pudo subir: '+e.message;}}
+  document.getElementById('productName').value=''; document.getElementById('productPrice').value=''; document.getElementById('productDescription').value='';
+  const photoInput=document.getElementById('productPhoto'); if(photoInput)photoInput.value='';
+  const preview=document.getElementById('productPhotoPreview'); if(preview){preview.src='';preview.style.display='none';}
+  const hint=document.getElementById('productPhotoHint'); if(hint)hint.style.display='';
+  await loadProducts(); go('products'); toast(photoWarning||'Producto publicado con éxito');
+}
+async function uploadDetailPhoto(){
+  const input=document.getElementById('detailPhotoInput');
+  const file=input?.files?.[0];
+  if(!file||!selectedProduct)return;
+  try{
+    toast('Subiendo foto…');
+    await attachPhotoToProduct(selectedProduct.id,file);
+    await loadProducts();
+    const refreshed=products.find(x=>x.id===selectedProduct.id); if(refreshed)openProduct(refreshed.id);
+    toast('Foto guardada');
+  }catch(e){console.error(e);toast('No se pudo subir la foto: '+e.message);}
+  finally{input.value='';}
+}
+
+async function loadSuppliers(){
+  const el=document.getElementById('supplierList');
+  if(el) el.innerHTML='<div class="small">Cargando proveedores…</div>';
+  const {data,error}=await db.from('companies').select('id,commercial_name,department,locality,description,category_id,is_verified,categories(name)').eq('status','active').order('commercial_name');
+  if(error){console.error(error); if(el) el.innerHTML='<div class="small">No pude cargar los proveedores.</div>'; return;}
+  suppliers=data||[];
+  renderSuppliers();
+}
+function renderSuppliers(){
+  const el=document.getElementById('supplierList'); if(!el)return;
+  if(!suppliers.length){el.innerHTML='<div class="small">Todavía no hay proveedores publicados.</div>';return;}
+  el.innerHTML=suppliers.map(c=>{
+    const own=currentCompany&&c.id===currentCompany.id;
+    const count=products.filter(p=>p.company_id===c.id).length;
+    const place=[c.locality,c.department].filter(Boolean).join(', ')||'Uruguay';
+    const cat=c.categories?.name||'Proveedor mayorista';
+    return `<div class="list-item"><div><b>${escapeHtml(c.commercial_name)}${c.is_verified?' ✓':''}${own?' · Tu empresa':''}</b><div class="small">${escapeHtml(cat)} · ${escapeHtml(place)} · ${count} producto${count===1?'':'s'} activo${count===1?'':'s'}</div></div><button class="btn" onclick="openSupplier('${c.id}')">Ver perfil</button></div>`;
+  }).join('');
+}
+function escapeHtml(v=''){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+async function openSupplier(id){
+  const c=suppliers.find(x=>x.id===id); if(!c)return; selectedSupplier=c;
+  document.getElementById('supplierDetailName').textContent=c.commercial_name+(c.is_verified?' ✓':'')+(currentCompany&&c.id===currentCompany.id?' · Tu empresa':'');
+  document.getElementById('supplierDetailMeta').textContent=[c.categories?.name,c.locality,c.department].filter(Boolean).join(' · ');
+  document.getElementById('supplierDetailDescription').textContent=c.description||'Proveedor mayorista en alXmayor.';
+  const target=document.getElementById('supplierProducts');
+  if(target) target.innerHTML='<div class="small">Cargando productos…</div>';
+  go('supplierDetail');
+
+  // Cargar los productos del proveedor directamente desde Supabase.
+  // Así la ficha siempre refleja lo publicado aunque la lista general todavía no se haya refrescado.
+  const {data,error}=await db.from('products')
+    .select('id,name,description,minimum_quantity,currency,shipping_scope,company_id,category_id,companies(commercial_name,department),categories(name),product_price_tiers(min_quantity,max_quantity,unit_price),product_images(storage_path,sort_order,created_at)')
+    .eq('company_id',id)
+    .eq('status','active')
+    .is('deleted_at',null)
+    .order('created_at',{ascending:false});
+  if(error){
+    console.error(error);
+    if(target) target.innerHTML='<div class="small">No pude cargar los productos de este proveedor.</div>';
+    return;
+  }
+  const supplierItems=(data||[]).map(p=>{
+    const tiers=(p.product_price_tiers||[]).sort((a,b)=>a.min_quantity-b.min_quantity);
+    const first=tiers[0];
+    const images=(p.product_images||[]).sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+    const imagePath=images[0]?.storage_path||null;
+    return {...p,title:p.name,emoji:emojiForCategory(p.categories?.name),imagePath,imageUrl:productImagePublicUrl(imagePath),price:first?`Desde ${fmtMoney(first.unit_price,p.currency)} /u`:'Consultar precio',min:`Mínimo ${p.minimum_quantity} unidades`,loc:p.companies?.department||'Uruguay',seller:`${p.companies?.commercial_name||c.commercial_name} · ${p.companies?.department||'Uruguay'}`,tiers};
+  });
+  // Mantener la lista global sincronizada para que abrir el producto funcione desde la ficha.
+  supplierItems.forEach(item=>{
+    const ix=products.findIndex(x=>x.id===item.id);
+    if(ix>=0) products[ix]=item; else products.push(item);
+  });
+  renderProducts(supplierItems,'supplierProducts');
+}
+async function loadProducts(){
+  const {data,error}=await db.from('products').select('id,name,description,minimum_quantity,currency,shipping_scope,company_id,category_id,companies(commercial_name,department),categories(name),product_price_tiers(min_quantity,max_quantity,unit_price),product_images(storage_path,sort_order,created_at)').eq('status','active').is('deleted_at',null).order('created_at',{ascending:false});
+  if(error){console.error(error); products=[]; renderProducts([], 'homeProducts'); renderProducts([], 'allProducts'); return;}
+  products=(data||[]).map(p=>{
+    const tiers=(p.product_price_tiers||[]).sort((a,b)=>a.min_quantity-b.min_quantity);
+    const first=tiers[0]; const images=(p.product_images||[]).sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||''))); const imagePath=images[0]?.storage_path||null; return {...p,title:p.name,emoji:emojiForCategory(p.categories?.name),imagePath,imageUrl:productImagePublicUrl(imagePath),price:first?`Desde ${fmtMoney(first.unit_price,p.currency)} /u`:'Consultar precio',min:`Mínimo ${p.minimum_quantity} unidades`,loc:p.companies?.department||'Uruguay',seller:`${p.companies?.commercial_name||'Proveedor'} · ${p.companies?.department||'Uruguay'}`,tiers};
+  });
+  renderProducts(products.slice(0,5),'homeProducts'); renderProducts(products,'allProducts'); if(suppliers.length)renderSuppliers();
+}
+function renderProducts(list,target){
+  const el=document.getElementById(target); if(!el) return;
+  if(!list.length){el.innerHTML='<div class="small">Todavía no hay productos publicados. Probá publicar el primero.</div>';return;}
+  el.innerHTML=list.map(p=>`<div class="card" onclick="openProduct('${p.id}')"><div class="card-img">${p.imageUrl?`<img src="${p.imageUrl}" alt="${p.title.replace(/"/g,'&quot;')}">`:p.emoji}</div><div class="card-body"><div class="card-title">${p.title}</div><div class="price">${p.price}</div><div class="small">${p.min}</div><div class="small">⌖ ${p.loc}</div></div></div>`).join('');
+}
+function go(id,push=true){document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));if(push&&navHistory[navHistory.length-1]!==id)navHistory.push(id);window.scrollTo({top:0,behavior:'smooth'});if(id==='messages')loadMessages();if(id==='account')loadAccount();if(id==='suppliers')loadSuppliers();}
+function historyBack(){if(navHistory.length>1)navHistory.pop();go(navHistory[navHistory.length-1],false);}
+function openProduct(id){const p=products.find(x=>x.id===id);if(!p)return;selectedProduct=p;document.getElementById('detailTitle').textContent=p.title;const visual=document.getElementById('detailEmoji');visual.innerHTML=p.imageUrl?`<img src="${p.imageUrl}" alt="${p.title.replace(/"/g,'&quot;')}">`:p.emoji;document.getElementById('detailSeller').textContent=p.seller;const own=!!(currentCompany&&p.company_id===currentCompany.id);document.getElementById('detailPhotoButton').style.display=own?'inline-flex':'none';document.getElementById('detailEditButton').style.display=own?'inline-flex':'none';const table=document.querySelector('#productDetail .price-table');table.innerHTML='<div class="price-row head"><span>Cantidad</span><span>Precio unitario</span></div>'+p.tiers.map(t=>`<div class="price-row"><span>${t.min_quantity}${t.max_quantity?' - '+t.max_quantity:'+'} unidades</span><span>${fmtMoney(t.unit_price,p.currency)}</span></div>`).join('');document.getElementById('orderProductName').value=p.title;document.getElementById('qty').value=p.minimum_quantity;calcOrder();go('productDetail');}
+function openEditProduct(){
+  if(!selectedProduct||!currentCompany||selectedProduct.company_id!==currentCompany.id){toast('Solo podés editar productos de tu empresa');return;}
+  document.getElementById('editProductName').value=selectedProduct.name||'';
+  document.getElementById('editProductCategory').value=String(selectedProduct.category_id||'');
+  document.getElementById('editProductMinQty').value=selectedProduct.minimum_quantity||1;
+  document.getElementById('editProductPrice').value=selectedProduct.tiers?.[0]?.unit_price??'';
+  document.getElementById('editProductCurrency').value=selectedProduct.currency||'UYU';
+  document.getElementById('editProductDescription').value=selectedProduct.description||'';
+  document.getElementById('editProductShipping').value=selectedProduct.shipping_scope||'coordinate';
+  go('editProduct');
+}
+async function saveProductEdit(){
+  if(!selectedProduct)return;
+  const params={
+    p_product_id:selectedProduct.id,
+    p_category_id:Number(document.getElementById('editProductCategory').value),
+    p_name:document.getElementById('editProductName').value.trim(),
+    p_description:document.getElementById('editProductDescription').value.trim()||null,
+    p_minimum_quantity:Number(document.getElementById('editProductMinQty').value),
+    p_currency:document.getElementById('editProductCurrency').value,
+    p_shipping_scope:document.getElementById('editProductShipping').value,
+    p_unit_price:Number(document.getElementById('editProductPrice').value)
+  };
+  if(!params.p_name||!params.p_category_id||params.p_minimum_quantity<1||!(params.p_unit_price>=0)){toast('Completá nombre, rubro, mínimo y precio');return;}
+  const {error}=await db.rpc('update_product_basic',params);
+  if(error){toast('No se pudo editar: '+error.message);return;}
+  const id=selectedProduct.id; await loadProducts(); toast('Producto actualizado'); openProduct(id);
+}
+
+function doSearch(){const q=document.getElementById('globalSearch').value.trim().toLowerCase();const filtered=products.filter(p=>p.title.toLowerCase().includes(q)||p.loc.toLowerCase().includes(q)||(p.seller||'').toLowerCase().includes(q));renderProducts(q?filtered:products,'allProducts');go('products');}
+document.getElementById('globalSearch').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
+function calcOrder(){const q=+document.getElementById('qty').value||0;if(!selectedProduct){document.getElementById('orderTotal').value='';return;}const tier=[...selectedProduct.tiers].reverse().find(t=>q>=t.min_quantity&&(!t.max_quantity||q<=t.max_quantity));document.getElementById('orderTotal').value=tier?fmtMoney(q*tier.unit_price,selectedProduct.currency):'Sin precio para esa cantidad';}
+async function prepareOrder(){
+  if(!currentUser){go('login');toast('Iniciá sesión para hacer un pedido');return;}
+  if(!selectedProduct)return;
+  document.getElementById('orderProductName').value=selectedProduct.title;
+  document.getElementById('qty').value=selectedProduct.minimum_quantity;
+  document.getElementById('orderContactEmail').value=currentUser.email||'';
+  const {data,error}=await db.rpc('get_company_payment_options',{p_company_id:selectedProduct.company_id});
+  const select=document.getElementById('orderPaymentMethod');
+  if(error||!data?.length){select.innerHTML='<option value="">A coordinar</option>';}
+  else select.innerHTML=data.map(m=>`<option value="${m.payment_method_id}">${m.name}</option>`).join('');
+  calcOrder();go('order');
+}
+async function submitOrderReal(){
+  if(!currentUser||!selectedProduct){toast('Iniciá sesión y elegí un producto');return;}
+  const q=Number(document.getElementById('qty').value||0);
+  const pm=document.getElementById('orderPaymentMethod').value;
+  const params={p_product_id:selectedProduct.id,p_quantity:q,p_payment_method_id:pm?Number(pm):null,p_buyer_message:document.getElementById('orderBuyerMessage').value.trim()||null,p_contact_name:document.getElementById('orderContactName').value.trim()||null,p_contact_phone:document.getElementById('orderContactPhone').value.trim()||null,p_contact_email:document.getElementById('orderContactEmail').value.trim()||null,p_delivery_department:document.getElementById('orderDeliveryDepartment').value.trim()||null,p_delivery_locality:document.getElementById('orderDeliveryLocality').value.trim()||null,p_delivery_address:document.getElementById('orderDeliveryAddress').value.trim()||null};
+  const {data,error}=await db.rpc('create_order',params);
+  if(error){toast('Pedido: '+error.message);return;}
+  toast('Pedido enviado. La conversación quedó creada automáticamente.');go('messages');await loadMessages();
+}
+async function consultSelectedProduct(){
+  if(!currentUser){go('login');toast('Iniciá sesión para consultar al proveedor');return;}
+  if(!selectedProduct)return;
+  const msg=prompt('Escribí tu consulta al proveedor:','Hola, quisiera consultar stock y condiciones.');
+  if(!msg)return;
+  const {error}=await db.rpc('create_product_conversation',{p_product_id:selectedProduct.id,p_initial_message:msg});
+  if(error){toast('Consulta: '+error.message);return;}
+  toast('Consulta enviada dentro de AlXmayor');go('messages');await loadMessages();
+}
+async function loadMessages(){
+  const el=document.getElementById('messageList');
+  if(!currentUser){el.innerHTML='<div class="small">Iniciá sesión para ver tus conversaciones.</div>';return;}
+  const {data,error}=await db.rpc('get_my_conversations');
+  if(error){console.error('get_my_conversations',error);el.innerHTML=`<div class="small">No pude cargar la mensajería. ${escapeHtml(error.message||'')}</div>`;return;}
+  if(!data?.length){el.innerHTML='<div class="small">Todavía no tenés conversaciones.</div>';return;}
+  el.innerHTML=data.map(c=>{const title=c.order_id?`Pedido · ${escapeHtml(c.buyer_name||'Comprador')}`:'Consulta comercial';const meta=c.order_id?`${escapeHtml(c.product_name||'Producto')}${c.quantity?' · '+c.quantity+' unidades':''}${c.order_status?' · '+escapeHtml(c.order_status):''}`:(c.product_name?escapeHtml(c.product_name):'');return `<div class="list-item conversation-card" onclick="openConversation('${c.id}')"><div><b>${title}</b><div class="small conversation-meta">${meta}</div><div class="small">${escapeHtml(c.last_message||'Sin mensajes')}</div></div><div class="conversation-actions"><span class="small">${c.last_message_at?new Date(c.last_message_at).toLocaleString('es-UY'):''}</span><button class="btn conversation-open" type="button">Abrir conversación</button></div></div>`;}).join('');
+}
+async function openConversation(id){
+  const {data,error}=await db.rpc('get_conversation_messages',{p_conversation_id:id});
+  if(error){toast('No pude abrir la conversación: '+error.message);return;}
+  const modal=document.getElementById('conversationModal');
+  const body=document.getElementById('conversationBody');
+  const input=document.getElementById('conversationReply');
+  modal.dataset.conversationId=id;
+  const {data:convs}=await db.rpc('get_my_conversations'); const ctx=(convs||[]).find(c=>c.id===id);
+  document.getElementById('conversationTitle').textContent=ctx?.order_id?`Pedido · ${ctx.buyer_name||'Comprador'}`:'Consulta comercial';
+  document.getElementById('conversationContext').textContent=ctx?.order_id?`${ctx.product_name||'Producto'}${ctx.quantity?' · '+ctx.quantity+' unidades':''}${ctx.order_status?' · '+ctx.order_status:''}`:(ctx?.product_name||'');
+  body.innerHTML=(data||[]).map(m=>`<div class="chat-bubble ${m.sender_user_id===currentUser?.id?'mine':''}">${escapeHtml(m.body||'[archivo]')}<div class="small">${new Date(m.created_at).toLocaleString('es-UY')}</div></div>`).join('')||'<div class="small">Sin mensajes.</div>';
+  input.value='';
+  modal.classList.add('show');
+  await db.rpc('mark_conversation_read',{p_conversation_id:id});
+}
+function closeConversation(){document.getElementById('conversationModal').classList.remove('show');}
+function escapeHtml(v){return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+async function replyConversation(){
+  const modal=document.getElementById('conversationModal'), input=document.getElementById('conversationReply');
+  const body=input.value.trim(); if(!body)return;
+  const {error}=await db.rpc('send_message',{p_conversation_id:modal.dataset.conversationId,p_body:body});
+  if(error){toast('No pude enviar: '+error.message);return;}
+  await openConversation(modal.dataset.conversationId); await loadMessages();
+}
+async function loadAccount(){
+  if(!currentUser){go('login');toast('Iniciá sesión para ver tu perfil');return;}
+  const {data:profile}=await db.from('users').select('full_name,phone').eq('id',currentUser.id).single();
+  document.getElementById('accountLoggedStatus').innerHTML=`✅ Sesión iniciada como <b>${currentUser.email||''}</b>`;
+  document.getElementById('accountFullName').value=profile?.full_name||currentUser.user_metadata?.full_name||'';
+  document.getElementById('accountPhone').value=profile?.phone||'';
+  document.getElementById('accountEmail').value=currentUser.email||'';
+  if(currentCompany){
+    document.getElementById('accountCompanyName').textContent=currentCompany.commercial_name;
+    document.getElementById('accountCompanyMeta').textContent=`${currentCompany.locality||''}${currentCompany.department?' · '+currentCompany.department:''}`;
+    const {count}=await db.from('products').select('id',{count:'exact',head:true}).eq('company_id',currentCompany.id).eq('status','active').is('deleted_at',null);
+    document.getElementById('accountProductCount').textContent=`${count||0} de ${currentCompany.product_limit||5} productos activos`;
+  }else{
+    document.getElementById('accountCompanyName').textContent='Sin empresa registrada';
+    document.getElementById('accountCompanyMeta').textContent='Registrá tu empresa para publicar';
+    document.getElementById('accountProductCount').textContent='0 productos activos';
+  }
+}
+async function saveMyProfile(){
+  if(!currentUser)return;
+  const full_name=document.getElementById('accountFullName').value.trim();
+  const phone=document.getElementById('accountPhone').value.trim()||null;
+  const {error}=await db.from('users').update({full_name,phone}).eq('id',currentUser.id);
+  if(error){toast('No se pudo guardar el perfil: '+error.message);return;}
+  currentUser={...currentUser,user_metadata:{...(currentUser.user_metadata||{}),full_name}};
+  updateAuthUI();toast('Perfil actualizado');
+}
+function showMyProducts(){
+  if(!currentCompany){toast('Primero registrá tu empresa');return;}
+  const mine=products.filter(p=>p.company_id===currentCompany.id);
+  renderProducts(mine,'allProducts');go('products');
+}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3200);}
+
+initApp();
+</script>
+<div id="conversationModal" class="modal-chat" onclick="if(event.target===this)closeConversation()">
+  <div class="chat-panel">
+    <div class="chat-head"><div><h3 id="conversationTitle">Conversación</h3><div id="conversationContext" class="small"></div></div><button class="chat-close" onclick="closeConversation()" aria-label="Cerrar">×</button></div>
+    <div id="conversationBody" class="chat-body"></div>
+    <div class="chat-compose"><input id="conversationReply" placeholder="Escribí un mensaje..." onkeydown="if(event.key==='Enter')replyConversation()"><button class="btn" onclick="replyConversation()">Enviar</button></div>
+  </div>
+</div>
+</body>
+</html>

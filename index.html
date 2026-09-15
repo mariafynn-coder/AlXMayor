@@ -121,6 +121,18 @@ button{cursor:pointer}
 .order-number{font-size:11px;font-weight:850;color:#7b8798;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}.conversation-card.unread{border-left:4px solid var(--yellow)}.new-dot{display:inline-block;background:var(--yellow);color:#fff;border-radius:999px;padding:3px 7px;font-size:10px;font-weight:850;margin-left:7px}
 .chat-order-summary{padding:12px 20px;background:#f8fafc;border-bottom:1px solid var(--line);font-size:13px}.chat-order-actions{display:flex;gap:9px;flex-wrap:wrap;padding:12px 20px;border-bottom:1px solid var(--line)}.chat-order-actions:empty{display:none}.chat-order-note{font-size:12px;color:#5f6d81;margin-top:6px}.btn.danger{border-color:#efc2c2;color:#a32929;background:#fff}.private-details{margin-top:9px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:10px;line-height:1.5}
 
+/* Seguimiento visual del pedido */
+.order-progress{margin-top:14px;padding:14px 0 2px;display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.progress-step{position:relative;text-align:center;padding-top:28px;font-size:11px;font-weight:800;color:#8a95a5}
+.progress-step:before{content:"";position:absolute;top:8px;left:0;right:0;height:3px;background:#e4e9f0}
+.progress-step:first-child:before{left:50%}.progress-step:last-child:before{right:50%}
+.progress-step:after{content:"";position:absolute;top:2px;left:50%;transform:translateX(-50%);width:15px;height:15px;border-radius:50%;background:#fff;border:3px solid #d7dee8;z-index:2}
+.progress-step.done{color:#176536}.progress-step.done:before{background:#9dd7ae}.progress-step.done:after{background:#2f8f52;border-color:#2f8f52}
+.progress-step.current{color:#174f91}.progress-step.current:after{background:#fff;border-color:#2d6fb7;box-shadow:0 0 0 4px #e7f0fc}
+.order-next-step{margin-top:12px;padding:11px 12px;border-radius:10px;background:#fff;border:1px solid var(--line);font-size:12px;color:#43536a}.order-next-step b{color:var(--navy)}
+.order-exit-state{margin-top:12px;padding:11px 12px;border-radius:10px;background:#fff0f0;color:#8d2929;font-size:12px;font-weight:750}
+@media(max-width:520px){.progress-step{font-size:9px}.order-progress{margin-left:-5px;margin-right:-5px}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -807,6 +819,23 @@ async function consultSelectedProduct(){
   toast('Consulta enviada dentro de AlXmayor');go('messages');await loadMessages();
 }
 function orderStatusLabel(status){return ({pending:'Pendiente',confirmed:'Confirmado',coordinating:'Coordinando',completed:'Completado',rejected:'Rechazado',cancelled:'Cancelado'})[status]||status||'';}
+function orderProgressHtml(status){
+  if(['rejected','cancelled'].includes(status)) return `<div class="order-exit-state">${status==='rejected'?'Pedido rechazado por el proveedor.':'Pedido cancelado.'}</div>`;
+  const flow=['pending','confirmed','coordinating','completed'];
+  const labels=['Pendiente','Confirmado','Coordinando','Completado'];
+  const current=Math.max(0,flow.indexOf(status));
+  return `<div class="order-progress">${flow.map((st,i)=>`<div class="progress-step ${i<current?'done':i===current?'current':''}">${i<current?'✓ ':''}${labels[i]}</div>`).join('')}</div>`;
+}
+function orderNextStepText(status,seller){
+  if(status==='pending') return seller?'Revisá el pedido y confirmalo si podés atenderlo.':'Esperá la confirmación del proveedor.';
+  if(status==='confirmed') return 'Coordinen directamente el pago y la entrega.';
+  if(status==='coordinating') return 'Cuando la operación haya finalizado, marcá el pedido como completado.';
+  if(status==='completed') return 'La operación quedó finalizada.';
+  if(status==='rejected') return 'Este pedido no continuará.';
+  if(status==='cancelled') return 'Este pedido fue cancelado.';
+  return '';
+}
+
 function shortOrderId(id){return id?String(id).split('-')[0].toUpperCase():'';}
 function isSellerConversation(c){return !!(currentCompany&&c.company_id===currentCompany.id);}
 let conversationCache=[];
@@ -848,7 +877,7 @@ async function openConversation(id){
     else if(ctx.order_status==='completed')note='Pedido marcado como completado.';
     else if(ctx.order_status==='rejected')note='El proveedor no pudo atender este pedido.';
     else if(ctx.order_status==='cancelled')note='Este pedido fue cancelado.';
-    summary.innerHTML=`<b>Estado:</b> <span class="order-status ${escapeHtml(ctx.order_status||'')}">${escapeHtml(label)}</span><div class="chat-order-note">${escapeHtml(note)}</div><div id="conversationPrivateDetails"></div>`;
+    summary.innerHTML=`<b>Estado:</b> <span class="order-status ${escapeHtml(ctx.order_status||'')}">${escapeHtml(label)}</span>${orderProgressHtml(ctx.order_status)}<div class="chat-order-note">${escapeHtml(note)}</div><div class="order-next-step"><b>Siguiente paso:</b> ${escapeHtml(orderNextStepText(ctx.order_status,seller))}</div><div id="conversationPrivateDetails"></div>`;
     actions.innerHTML='';
     if(seller&&ctx.order_status==='pending')actions.innerHTML=`<button class="btn primary" onclick="changeOrderStatus('confirm')">Confirmar pedido</button><button class="btn danger" onclick="changeOrderStatus('reject')">No puedo atenderlo</button>`;
     else if(ctx.order_status==='confirmed')actions.innerHTML=`<button class="btn" onclick="changeOrderStatus('coordinating')">Pasar a coordinando</button><button class="btn" onclick="changeOrderStatus('completed')">Marcar completado</button>`;

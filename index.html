@@ -306,11 +306,12 @@ button{cursor:pointer}
         <h2>Iniciar sesión</h2>
         <p class="small">Entrá a tu cuenta real de AlXmayor.</p>
         <div class="form">
-          <div class="field"><label>Email</label><input id="loginEmail" type="email" placeholder="tu@email.com"></div>
-          <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" placeholder="••••••••"></div>
+          <div class="field"><label>Email</label><input id="loginEmail" type="email" autocomplete="username" placeholder="tu@email.com"></div>
+          <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••"></div>
           <button class="btn primary" onclick="loginReal()">Iniciar sesión</button>
           <button class="btn" onclick="openForgotPassword()">¿Olvidaste tu contraseña?</button>
           <button id="resendConfirmationBtn" class="btn" style="display:none" onclick="resendConfirmation()">Reenviar email de confirmación</button>
+          <button class="btn" onclick="prepareLoginForAnotherUser()">Ingresar con otra cuenta</button>
           <button class="btn" onclick="go('register')">Crear una cuenta</button>
         </div>
       </section>
@@ -330,8 +331,8 @@ button{cursor:pointer}
         <h2>Crear nueva contraseña</h2>
         <p class="small">Elegí una contraseña nueva de al menos 8 caracteres.</p>
         <div class="form">
-          <div class="field"><label>Nueva contraseña</label><input id="newPassword" type="password" placeholder="Mínimo 8 caracteres"></div>
-          <div class="field"><label>Repetir contraseña</label><input id="newPasswordRepeat" type="password" placeholder="Repetí la contraseña"></div>
+          <div class="field"><label>Nueva contraseña</label><input id="newPassword" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></div>
+          <div class="field"><label>Repetir contraseña</label><input id="newPasswordRepeat" type="password" autocomplete="new-password" placeholder="Repetí la contraseña"></div>
           <button class="btn primary" onclick="saveNewPassword()">Guardar nueva contraseña</button>
         </div>
       </section>
@@ -342,7 +343,7 @@ button{cursor:pointer}
         <div class="form">
           <div class="field"><label>Nombre completo</label><input id="regName" placeholder="Tu nombre y apellido"></div>
           <div class="field"><label>Email</label><input id="regEmail" type="email" placeholder="tu@email.com"></div>
-          <div class="field"><label>Contraseña</label><input id="regPassword" type="password" placeholder="Mínimo 8 caracteres"></div>
+          <div class="field"><label>Contraseña</label><input id="regPassword" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres"></div>
           <button id="registerBtn" class="btn primary" onclick="registerReal()">Registrarme gratis</button><div id="registerStatus" class="small" style="margin-top:8px"></div>
           <button class="btn" onclick="go('login')">Ya tengo cuenta</button>
         </div>
@@ -466,6 +467,7 @@ let suppliers = [];
 let selectedSupplier = null;
 let selectedProduct = null;
 let navHistory=['home'];
+let passwordRecoveryMode = false;
 
 function fmtMoney(value,currency='UYU'){
   const symbol=currency==='USD'?'US$':'$';
@@ -486,14 +488,17 @@ async function initApp(){
   updateAuthUI();
   db.auth.onAuthStateChange(async (event,session)=>{
     currentUser=session?.user||null;
-    await refreshCompany();
-    updateAuthUI();
     if(event==='PASSWORD_RECOVERY'){
+      passwordRecoveryMode=true;
       go('updatePassword');
       toast('Enlace validado. Creá tu nueva contraseña.');
+      return;
     }
+    await refreshCompany();
+    updateAuthUI();
   });
-  handleAuthReturn();
+  await handleAuthReturn();
+  clearGlobalSearch();
 }
 async function loadCategories(){
   const {data,error}=await db.from('categories').select('id,name,slug').eq('is_active',true).order('sort_order');
@@ -534,7 +539,7 @@ async function authTopAction(){
   else go('login');
 }
 async function logoutReal(){
-  await db.auth.signOut(); currentUser=null; currentCompany=null; updateAuthUI(); go('home'); toast('Sesión cerrada');
+  await db.auth.signOut(); currentUser=null; currentCompany=null; clearAuthForms(); clearGlobalSearch(); updateAuthUI(); go('home'); toast('Sesión cerrada');
 }
 function startPublish(){
   if(!currentUser){go('register'); toast('Creá tu cuenta para publicar gratis'); return;}
@@ -544,6 +549,20 @@ function startPublish(){
 }
 function authBaseUrl(){
   return window.location.origin + '/';
+}
+function clearGlobalSearch(){
+  const search=document.getElementById('globalSearch');
+  if(search){search.value='';search.setAttribute('autocomplete','off');}
+}
+function clearAuthForms(){
+  ['loginEmail','loginPassword','regName','regEmail','regPassword','recoveryEmail','newPassword','newPasswordRepeat'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  const resend=document.getElementById('resendConfirmationBtn');if(resend)resend.style.display='none';
+}
+function prepareLoginForAnotherUser(){
+  const email=document.getElementById('loginEmail'),password=document.getElementById('loginPassword');
+  if(email)email.value=''; if(password)password.value='';
+  const resend=document.getElementById('resendConfirmationBtn');if(resend)resend.style.display='none';
+  go('login'); setTimeout(()=>email?.focus(),0);
 }
 function openForgotPassword(){
   const loginEmail=document.getElementById('loginEmail').value.trim();
@@ -555,7 +574,7 @@ async function sendPasswordRecovery(){
   if(!email || !email.includes('@')){toast('Ingresá un email válido');return;}
   const btn=document.getElementById('recoverySendBtn');
   btn.disabled=true; btn.textContent='Enviando…';
-  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:authBaseUrl()});
+  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:authBaseUrl()+'?recovery=1'});
   btn.disabled=false; btn.textContent='Enviar enlace de recuperación';
   if(error){
     if(String(error.message).toLowerCase().includes('rate')) toast('Hiciste varios intentos. Esperá unos minutos y volvé a probar.');
@@ -573,9 +592,11 @@ async function saveNewPassword(){
   if(error){toast('No pudimos cambiar la contraseña. Pedí un enlace nuevo e intentá otra vez.');return;}
   document.getElementById('newPassword').value=''; document.getElementById('newPasswordRepeat').value='';
   toast('Contraseña actualizada. Ya podés usarla para entrar.');
-  await db.auth.signOut(); currentUser=null; currentCompany=null; updateAuthUI(); go('login');
+  passwordRecoveryMode=false;
+  history.replaceState({},document.title,window.location.pathname);
+  await db.auth.signOut(); currentUser=null; currentCompany=null; clearAuthForms(); updateAuthUI(); go('login');
 }
-function handleAuthReturn(){
+async function handleAuthReturn(){
   const hash=new URLSearchParams(window.location.hash.replace(/^#/,''));
   const query=new URLSearchParams(window.location.search);
   const error=hash.get('error_description')||query.get('error_description');
@@ -585,7 +606,16 @@ function handleAuthReturn(){
     return;
   }
   const type=hash.get('type')||query.get('type');
-  if(type==='recovery') go('updatePassword');
+  const recoveryHint=type==='recovery'||query.get('recovery')==='1';
+  if(recoveryHint){
+    const {data:{session}}=await db.auth.getSession();
+    if(session){
+      passwordRecoveryMode=true;
+      currentUser=session.user;
+      go('updatePassword');
+      toast('Creá tu nueva contraseña.');
+    }
+  }
 }
 
 async function registerReal(){
@@ -603,9 +633,10 @@ async function registerReal(){
     const {data,error}=await db.auth.signUp({email,password,options:{data:{full_name},emailRedirectTo:authBaseUrl()}});
     if(error) throw error;
     if(!data?.user) throw new Error('No se pudo crear la cuenta');
-    if(status) status.textContent='Cuenta creada. Revisá tu email para confirmar.';
+    if(status) status.textContent='Cuenta creada. Revisá tu email para confirmar. Mientras tanto podés iniciar sesión con otra cuenta.';
+    document.getElementById('regName').value='';document.getElementById('regEmail').value='';document.getElementById('regPassword').value='';
     if(data.session){currentUser=data.user;await refreshCompany();updateAuthUI();go('home');toast('Cuenta creada. Ya podés usar alXmayor.');}
-    else {document.getElementById('loginEmail').value=email;go('login');toast('Cuenta creada. Revisá tu email para confirmarla y después iniciá sesión.');}
+    else {prepareLoginForAnotherUser();toast('Cuenta creada. Revisá tu email para confirmarla. Podés entrar con otra cuenta mientras tanto.');}
   }catch(err){
     console.error('alXmayor signup',err);
     const msg=String(err?.message||'').toLowerCase();
@@ -630,7 +661,7 @@ async function loginReal(){
     }
     return;
   }
-  currentUser=data.user; await refreshCompany(); updateAuthUI(); go(currentCompany?'home':'company'); toast('Sesión iniciada');
+  currentUser=data.user; document.getElementById('loginPassword').value=''; clearGlobalSearch(); await refreshCompany(); updateAuthUI(); go(currentCompany?'home':'company'); toast('Sesión iniciada');
 }
 
 async function resendConfirmation(){
@@ -1021,6 +1052,7 @@ function showMyProducts(){
 }
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3200);}
 
+window.addEventListener('pageshow',clearGlobalSearch);
 initApp();
 </script>
 <div id="conversationModal" class="modal-chat" onclick="if(event.target===this)closeConversation()">

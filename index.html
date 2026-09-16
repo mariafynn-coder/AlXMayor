@@ -226,6 +226,19 @@ button{cursor:pointer}
  .notification-panel{top:78px!important;right:10px!important;width:calc(100vw - 20px)!important;max-height:calc(100vh - 98px)!important}
 }
 
+
+/* PULIDO VISUAL 16-09: contraste, proporciones y chat compacto */
+.chat-order-actions .btn.primary{background:var(--yellow)!important;border-color:var(--yellow)!important;color:#fff!important;min-height:44px;padding:10px 16px!important;box-shadow:0 2px 8px #ff6a0026}
+.chat-order-actions .btn{min-height:44px;padding:10px 16px!important}
+.chat-compose{min-height:66px!important;padding:10px 14px!important;align-items:center!important}
+.chat-compose input{height:44px!important;min-height:44px!important;padding:10px 13px!important}
+.chat-compose .btn{height:44px!important;min-height:44px!important;padding:0 18px!important;background:var(--navy)!important;border-color:var(--navy)!important;color:#fff!important}
+.chat-head{padding:14px 18px!important}.chat-head h3{font-size:18px!important}
+.chat-order-summary{font-size:12px!important}.chat-order-summary .order-status{margin-top:0!important}
+.chat-order-note{line-height:1.4}.order-next-step{line-height:1.4}
+.closure-row{align-items:center}.closure-ok,.closure-wait{white-space:nowrap}
+.notification-panel{overflow-x:hidden!important}.notification-item{min-width:0!important}.notification-item div{overflow-wrap:anywhere!important}
+@media(max-width:650px){.chat-compose{min-height:62px!important;padding:8px!important}.chat-compose input{height:42px!important;min-height:42px!important}.chat-compose .btn{height:42px!important;min-height:42px!important;padding:0 14px!important}.chat-order-actions .btn{width:100%;justify-content:center}.chat-head{padding:12px!important}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>

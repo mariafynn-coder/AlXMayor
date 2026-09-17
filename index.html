@@ -239,11 +239,34 @@ button{cursor:pointer}
 .closure-row{align-items:center}.closure-ok,.closure-wait{white-space:nowrap}
 .notification-panel{overflow-x:hidden!important}.notification-item{min-width:0!important}.notification-item div{overflow-wrap:anywhere!important}
 @media(max-width:650px){.chat-compose{min-height:62px!important;padding:8px!important}.chat-compose input{height:42px!important;min-height:42px!important}.chat-compose .btn{height:42px!important;min-height:42px!important;padding:0 14px!important}.chat-order-actions .btn{width:100%;justify-content:center}.chat-head{padding:12px!important}}
+
+/* BACKOFFICE alXmayor */
+.backoffice-shell{display:none;min-height:100vh;background:#f5f7fb}.backoffice-shell.active{display:grid;grid-template-columns:230px 1fr}.back-side{background:var(--navy);color:#fff;padding:24px 16px;min-height:100vh}.back-brand{font-size:25px;font-weight:900;margin-bottom:6px}.back-brand .x{color:var(--yellow)}.back-kicker{font-size:11px;color:#b9c8dd;margin-bottom:28px}.back-nav button{width:100%;display:block;text-align:left;border:0;background:transparent;color:#dbe5f2;padding:11px 12px;border-radius:9px;font-weight:750;margin:3px 0}.back-nav button.active,.back-nav button:hover{background:#ffffff16;color:#fff}.back-main{padding:28px;min-width:0}.back-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px}.back-top h1{margin:0;font-size:28px}.back-user{font-size:13px;color:var(--muted)}.back-grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:14px}.back-card{background:#fff;border:1px solid var(--line);border-radius:15px;padding:18px}.back-card .k{font-size:12px;color:var(--muted);font-weight:800}.back-card .v{font-size:27px;font-weight:900;color:var(--navy);margin-top:7px}.back-card.attention{border-left:4px solid var(--yellow)}.back-section{margin-top:24px}.back-section h2{font-size:18px}.back-note{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;color:#526178;font-size:13px}.back-loading{padding:30px;background:#fff;border:1px solid var(--line);border-radius:14px;color:var(--muted)}
+@media(max-width:850px){.backoffice-shell.active{grid-template-columns:1fr}.back-side{min-height:auto}.back-nav{display:flex;overflow:auto;gap:5px}.back-nav button{white-space:nowrap;width:auto}.back-main{padding:18px}.back-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.back-grid{grid-template-columns:1fr}}
+</style>
+<script>
+(function(){
+  const path = window.location.pathname.replace(/\/+$/, '') || '/';
+  if (path === '/back' || path.startsWith('/back/')) {
+    document.documentElement.classList.add('back-route');
+  }
+})();
+</script>
+<style>
+html.back-route #publicApp{display:none!important}
+html.back-route .backoffice-shell{display:grid!important;grid-template-columns:230px 1fr}
+@media(max-width:850px){html.back-route .backoffice-shell{grid-template-columns:1fr!important}}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div class="app">
+
+<div id="backofficeShell" class="backoffice-shell">
+  <aside class="back-side"><div class="back-brand">al<span class="x">X</span>mayor</div><div class="back-kicker">Backoffice interno</div><div class="back-nav"><button class="active">Dashboard</button><button disabled>Empresas</button><button disabled>Contrataciones</button><button disabled>Pedidos</button><button disabled>Productos</button><button disabled>Reportes</button><button disabled>Usuarios</button><button disabled>Auditoría</button></div></aside>
+  <main class="back-main"><div class="back-top"><div><h1>Dashboard</h1><div class="back-user" id="backRole">Validando acceso…</div></div><button class="btn" onclick="leaveBackoffice()">Ir a alXmayor</button></div><div id="backDashboard" class="back-loading">Cargando datos reales…</div></main>
+</div>
+<div class="app" id="publicApp">
   <header class="topbar">
     <div>
       <div class="logo">al<span class="x">X</span>mayor</div>
@@ -1163,8 +1186,29 @@ function showMyProducts(){
 }
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3200);}
 
+
+
+function backFmtLabel(k){return String(k||'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());}
+function backFmtValue(k,v){if(v===null||v===undefined)return '—';const key=String(k).toLowerCase();if(typeof v==='number'&&(key.includes('ingres')||key.includes('revenue')||key.includes('valor')))return fmtMoney(v,'UYU');if(typeof v==='number')return Number(v).toLocaleString('es-UY');return escapeHtml(String(v));}
+function backSectionCards(obj){if(!obj||typeof obj!=='object')return '';return Object.entries(obj).filter(([,v])=>typeof v!=='object').map(([k,v])=>`<div class="back-card ${k.includes('confirm')||k.includes('attention')?'attention':''}"><div class="k">${escapeHtml(backFmtLabel(k))}</div><div class="v">${backFmtValue(k,v)}</div></div>`).join('');}
+async function initBackoffice(){
+  document.getElementById('publicApp').style.display='none';
+  document.getElementById('backofficeShell').classList.add('active');
+  const {data:{session}}=await db.auth.getSession(); currentUser=session?.user||null;
+  if(!currentUser){document.getElementById('backDashboard').innerHTML='<div class="back-note"><b>Acceso interno.</b><br>Iniciá sesión primero en alXmayor con una cuenta autorizada y luego volvé a /back.</div>';document.getElementById('backRole').textContent='Sin sesión';return;}
+  const {data,error}=await db.rpc('get_backoffice_dashboard');
+  if(error){console.error(error);document.getElementById('backRole').textContent=currentUser.email||'';document.getElementById('backDashboard').innerHTML='<div class="back-note"><b>No tenés acceso al backoffice o no se pudo cargar el dashboard.</b><br>'+escapeHtml(error.message||'')+'</div>';return;}
+  const d=Array.isArray(data)?(data[0]||{}):(data||{}), role=d.staff?.role||d.role||'staff';
+  document.getElementById('backRole').textContent=(currentUser.email||'')+' · '+String(role).toUpperCase();
+  const sections=[];
+  for(const [name,obj] of Object.entries(d)){if(name==='staff'||obj===null)continue;if(typeof obj==='object'&&!Array.isArray(obj)){const cards=backSectionCards(obj);if(cards)sections.push(`<section class="back-section"><h2>${escapeHtml(backFmtLabel(name))}</h2><div class="back-grid">${cards}</div></section>`);} }
+  const top=backSectionCards(Object.fromEntries(Object.entries(d).filter(([k,v])=>k!=='staff'&&typeof v!=='object')));
+  document.getElementById('backDashboard').className='';document.getElementById('backDashboard').innerHTML=(top?`<div class="back-grid">${top}</div>`:'')+sections.join('')+(top||sections.length?'':'<div class="back-note">Dashboard conectado. No hay métricas disponibles para mostrar todavía.</div>');
+}
+function leaveBackoffice(){window.location.href=window.location.origin+'/';}
+
 window.addEventListener('pageshow',clearGlobalSearch);
-initApp();
+{ const p=window.location.pathname.replace(/\/+$/,'')||'/'; if(p==='/back'||p.startsWith('/back/')) initBackoffice(); else initApp(); }
 </script>
 <div id="conversationModal" class="modal-chat" onclick="if(event.target===this)closeConversation()">
   <div class="chat-panel">

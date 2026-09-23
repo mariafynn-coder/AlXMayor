@@ -507,11 +507,19 @@ html.back-route .backoffice-shell{display:grid!important;grid-template-columns:2
       </section>
 
       <section id="opportunities" class="view">
-        <div class="section-head"><h2>Oportunidades</h2><button class="btn primary" onclick="toast('Formulario de oportunidad abierto')">Publicar oportunidad</button></div>
-        <div class="list">
-          <div class="list-item"><div><b>Busco proveedor de descartables</b><div class="small">Maldonado · Comercio gastronómico</div></div><button class="btn" onclick="toast('Marcaste interés')">Me interesa</button></div>
-          <div class="list-item"><div><b>Importador busca comercios para nueva línea</b><div class="small">Todo Uruguay · Hogar y bazar</div></div><button class="btn" onclick="toast('Abriste la oportunidad')">Ver</button></div>
-          <div class="list-item"><div><b>Distribuidor ofrece cobertura en litoral</b><div class="small">Salto · Paysandú · Río Negro</div></div><button class="btn" onclick="toast('Abriste la oportunidad')">Ver</button></div>
+        <div class="section-head"><h2>Oportunidades</h2><button class="btn primary" onclick="openOpportunityForm()">Publicar oportunidad</button></div>
+        <p class="small">Publicá una necesidad comercial. Cuando otra empresa marque <b>Me interesa</b>, la conversación continúa de forma privada dentro de alXmayor.</p>
+        <div id="opportunityList" class="list"><div class="small">Cargando oportunidades…</div></div>
+      </section>
+
+      <section id="opportunityForm" class="view">
+        <button class="back" onclick="go('opportunities')">← Volver</button>
+        <h2>Publicar oportunidad</h2>
+        <div class="form">
+          <div class="field"><label>¿Qué estás buscando? *</label><input id="oppTitle" placeholder="Ej.: Busco proveedor de descartables"></div>
+          <div class="field"><label>Descripción *</label><textarea id="oppDescription" placeholder="Contá qué necesitás, cantidades aproximadas y condiciones importantes."></textarea></div>
+          <div class="inline"><div class="field"><label>Categoría</label><select id="oppCategory"></select></div><div class="field"><label>Zona</label><input id="oppLocation" placeholder="Ej.: Montevideo o Todo Uruguay"></div></div>
+          <button class="btn primary" onclick="publishOpportunity()">Publicar oportunidad</button>
         </div>
       </section>
 
@@ -560,6 +568,7 @@ html.back-route .backoffice-shell{display:grid!important;grid-template-columns:2
           <div class="list-item"><div><b id="accountCompanyName">Mi empresa</b><div class="small" id="accountCompanyMeta">Sin empresa registrada</div></div><button class="btn" onclick="startPublish()">Publicar producto</button></div>
           <div class="list-item"><div><b>Mis publicaciones</b><div class="small" id="accountProductCount">0 de 5 productos activos</div></div><button class="btn" onclick="showMyProducts()">Ver productos</button></div>
           <div class="list-item"><div><b>Plan</b><div class="small">Gratis · hasta 5 productos activos</div></div><button class="btn" onclick="toast('Planes: Gratis / PRO')">Ver planes</button></div>
+          <div class="list-item" id="accountReportRow" style="display:none"><div><b>Reporte comercial</b><div class="small">Métricas de tu empresa dentro de alXmayor.</div></div><button class="btn" onclick="downloadCommercialReport()">Descargar reporte</button></div>
           <div class="list-item"><div><b>Sesión</b><div class="small">Tu cuenta está conectada en este dispositivo.</div></div><button class="btn" onclick="logoutReal()">Salir</button></div>
         </div>
       </section>
@@ -626,13 +635,13 @@ async function initApp(){
   clearGlobalSearch();
 }
 async function loadCategories(){
-  const {data,error}=await db.from('categories').select('id,name,slug').eq('is_active',true).order('sort_order');
+  const {data,error}=await db.from('categories').select('id,name,slug,parent_id,sort_order').eq('is_active',true).order('sort_order');
   if(error){toast('No pude cargar categorías'); return;}
   categories=data||[];
   const options=categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-  ['companyCategory','productCategory','editProductCategory'].forEach(id=>{const el=document.getElementById(id); if(el) el.innerHTML=options;});
+  ['companyCategory','productCategory','editProductCategory','oppCategory'].forEach(id=>{const el=document.getElementById(id); if(el) el.innerHTML=options;});
   const sidebar=document.getElementById('sidebarCategories');
-  if(sidebar) sidebar.innerHTML=categories.map(c=>`<div class="category" data-category-id="${c.id}" onclick="openCategory(${c.id})">${escapeHtml(c.name)}</div>`).join('');
+  if(sidebar){const roots=categories.filter(c=>!c.parent_id);sidebar.innerHTML=roots.map(c=>`<div class="category" data-category-id="${c.id}" onclick="openCategory(${c.id})">${escapeHtml(c.name)}</div>`).join('');}
 }
 async function refreshCompany(){
   currentCompany=null;
@@ -975,6 +984,7 @@ function go(id,push=true){
   if(id==='messages')loadMessages();
   if(id==='account')loadAccount();
   if(id==='suppliers'){loadProducts().then(loadSuppliers);}
+  if(id==='opportunities')loadOpportunities();
 }
 
 async function openCategory(categoryId){
@@ -1164,6 +1174,7 @@ async function loadAccount(){
     document.getElementById('accountCompanyMeta').textContent=`${currentCompany.locality||''}${currentCompany.department?' · '+currentCompany.department:''}`;
     const {count}=await db.from('products').select('id',{count:'exact',head:true}).eq('company_id',currentCompany.id).eq('status','active').is('deleted_at',null);
     document.getElementById('accountProductCount').textContent=`${count||0} de ${currentCompany.product_limit||5} productos activos`;
+    const rr=document.getElementById('accountReportRow');if(rr)rr.style.display=Number(currentCompany.product_limit||5)>5?'flex':'none';
   }else{
     document.getElementById('accountCompanyName').textContent='Sin empresa registrada';
     document.getElementById('accountCompanyMeta').textContent='Registrá tu empresa para publicar';
@@ -1184,6 +1195,34 @@ function showMyProducts(){
   const mine=products.filter(p=>p.company_id===currentCompany.id);
   renderProducts(mine,'allProducts');go('products');
 }
+
+async function loadOpportunities(){
+ const el=document.getElementById('opportunityList');if(!el)return;
+ const {data,error}=await db.rpc('get_active_opportunities');
+ if(error){el.innerHTML='<div class="small">Las oportunidades quedarán disponibles cuando se aplique la migración de Supabase.</div>';return;}
+ const rows=data||[]; if(!rows.length){el.innerHTML='<div class="small">Todavía no hay oportunidades publicadas.</div>';return;}
+ el.innerHTML=rows.map(o=>`<div class="list-item"><div><b>${escapeHtml(o.title)}</b><div class="small">${escapeHtml([o.location,o.category_name].filter(Boolean).join(' · '))}</div><div class="small">${escapeHtml(o.description||'')}</div></div><button class="btn" onclick="interestOpportunity('${o.id}')">Me interesa</button></div>`).join('');
+}
+function openOpportunityForm(){if(!currentUser){go('login');toast('Iniciá sesión para publicar una oportunidad');return;}go('opportunityForm');}
+async function publishOpportunity(){
+ if(!currentUser)return; const title=document.getElementById('oppTitle').value.trim(),description=document.getElementById('oppDescription').value.trim();
+ if(!title||!description){toast('Completá título y descripción');return;}
+ const {error}=await db.rpc('create_opportunity',{p_title:title,p_description:description,p_category_id:Number(document.getElementById('oppCategory').value)||null,p_location:document.getElementById('oppLocation').value.trim()||null});
+ if(error){toast('Oportunidad: '+error.message);return;} toast('Oportunidad publicada');go('opportunities');
+}
+async function interestOpportunity(id){
+ if(!currentUser){go('login');toast('Iniciá sesión para contactar a quien publicó');return;}
+ const {data,error}=await db.rpc('create_opportunity_conversation',{p_opportunity_id:id});
+ if(error){toast('No pude abrir la conversación: '+error.message);return;} toast('Conversación creada');go('messages');await loadMessages();
+ const cid=typeof data==='string'?data:(data?.conversation_id||data?.id); if(cid)openConversation(cid);
+}
+async function downloadCommercialReport(){
+ if(!currentCompany){toast('Primero registrá tu empresa');return;}
+ const {data,error}=await db.rpc('get_my_commercial_report');
+ if(error){toast('Reporte: '+error.message);return;}
+ const rows=Array.isArray(data)?data:[data]; const blob=new Blob([JSON.stringify(rows,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download='reporte-comercial-alxmayor.json';a.click();URL.revokeObjectURL(url);
+}
+
 function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),3200);}
 
 
